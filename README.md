@@ -3,7 +3,7 @@
 
 ## Architecture
 
-We used CRNN which is a pytorch implementation of the model proposed in the paper ["An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition (2016), Baoguang Shi et al."](http://arxiv.org/abs/1507.05717).
+Our architecture is CRNN trained using CTCLoss which is a pytorch implementation of the model proposed in the paper ["An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition (2016), Baoguang Shi et al."](http://arxiv.org/abs/1507.05717).
 
 ## Pretrained Model
 
