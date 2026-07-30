@@ -57,22 +57,14 @@ def main():
     save_interval = config['save_interval']
     cpu_workers = config['cpu_workers']
     reload_checkpoint = config['reload_checkpoint']
-    valid_max_iter = config['valid_max_iter']
 
     img_width = config['img_width']
     img_height = config['img_height']
-    data_dir = config['data_dir']
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device: {device}')
 
-    # train_dataset = Synth90kDataset(root_dir=data_dir, mode='train',
-    #                                img_height=img_height, img_width=img_width)
-    # valid_dataset = Synth90kDataset(root_dir=data_dir, mode='dev',
-    #
-    # img_height=img_height, img_width=img_width)
     image_size = (32, 100)
-    batch_size = 64
 
     augmentation = transforms.Compose([
         transforms.Resize(size=(image_size[0], image_size[1])),
