@@ -10,10 +10,8 @@
 from docopt import docopt
 import torch
 from tqdm import tqdm
-from torch.utils.data import DataLoader
 
-from config import common_config as config
-from dataset import Synth90kDataset, synth90k_collate_fn
+from config import common_config
 from model import CRNN
 from ctc_decoder import ctc_decode
 
@@ -48,44 +46,3 @@ def show_result(paths, preds):
         text = ''.join(pred)
         print(f'{path} > {text}')
 
-
-def main():
-    arguments = docopt(__doc__)
-
-    images = arguments['IMAGE']
-    reload_checkpoint = arguments['-m']
-    batch_size = int(arguments['-s'])
-    decode_method = arguments['-d']
-    beam_size = int(arguments['-b'])
-
-    img_height = config['img_height']
-    img_width = config['img_width']
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'device: {device}')
-
-    predict_dataset = Synth90kDataset(paths=images,
-                                      img_height=img_height, img_width=img_width)
-
-    predict_loader = DataLoader(
-        dataset=predict_dataset,
-        batch_size=batch_size,
-        shuffle=False)
-
-    num_class = len(Synth90kDataset.LABEL2CHAR) + 1
-    crnn = CRNN(1, img_height, img_width, num_class,
-                map_to_seq_hidden=config['map_to_seq_hidden'],
-                rnn_hidden=config['rnn_hidden'],
-                leaky_relu=config['leaky_relu'])
-    crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
-    crnn.to(device)
-
-    preds = predict(crnn, predict_loader, Synth90kDataset.LABEL2CHAR,
-                    decode_method=decode_method,
-                    beam_size=beam_size)
-
-    show_result(images, preds)
-
-
-if __name__ == '__main__':
-    main()

@@ -1,10 +1,8 @@
 import torch
-from torch.utils.data import DataLoader
-from torch.nn import CTCLoss
+
 from tqdm import tqdm
 
-from dataset import Synth90kDataset, synth90k_collate_fn
-from model import CRNN
+
 from ctc_decoder import ctc_decode
 from config import evaluate_config as config
 
@@ -64,44 +62,3 @@ def evaluate(crnn, dataloader, criterion,
     }
     return evaluation
 
-
-def main():
-    eval_batch_size = config['eval_batch_size']
-    cpu_workers = config['cpu_workers']
-    reload_checkpoint = config['reload_checkpoint']
-
-    img_height = config['img_height']
-    img_width = config['img_width']
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'device: {device}')
-
-    test_dataset = Synth90kDataset(root_dir=config['data_dir'], mode='test',
-                                   img_height=img_height, img_width=img_width)
-
-    test_loader = DataLoader(
-        dataset=test_dataset,
-        batch_size=eval_batch_size,
-        shuffle=False,
-        num_workers=cpu_workers,
-        collate_fn=synth90k_collate_fn)
-
-    num_class = len(Synth90kDataset.LABEL2CHAR) + 1
-    crnn = CRNN(1, img_height, img_width, num_class,
-                map_to_seq_hidden=config['map_to_seq_hidden'],
-                rnn_hidden=config['rnn_hidden'],
-                leaky_relu=config['leaky_relu'])
-    crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
-    crnn.to(device)
-
-    criterion = CTCLoss(reduction='sum')
-    criterion.to(device)
-
-    evaluation = evaluate(crnn, test_loader, criterion,
-                          decode_method=config['decode_method'],
-                          beam_size=config['beam_size'])
-    print('test_evaluation: loss={loss}, acc={acc}'.format(**evaluation))
-
-
-if __name__ == '__main__':
-    main()

@@ -6,10 +6,24 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.nn import CTCLoss
 
-from dataset import Synth90kDataset, synth90k_collate_fn
+from dataset import collate_fn, DataGenerator
 from model import CRNN
 from evaluate import evaluate
 from config import train_config as config
+
+import os
+from torchvision import io, transforms
+import torch
+import pandas as pd
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+
+PATH = "../ORAND-CAR-2014/ORAND-CAR-2014/CAR-AB/"
+SUB_FOLDER = "ab_train_images/"
 
 
 def train_batch(crnn, data, optimizer, criterion, device):
@@ -27,7 +41,8 @@ def train_batch(crnn, data, optimizer, criterion, device):
 
     optimizer.zero_grad()
     loss.backward()
-    torch.nn.utils.clip_grad_norm_(crnn.parameters(), 5) # gradient clipping with 5
+    torch.nn.utils.clip_grad_norm_(
+        crnn.parameters(), 5)  # gradient clipping with 5
     optimizer.step()
     return loss.item()
 
@@ -51,31 +66,57 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'device: {device}')
 
-    train_dataset = Synth90kDataset(root_dir=data_dir, mode='train',
-                                    img_height=img_height, img_width=img_width)
-    valid_dataset = Synth90kDataset(root_dir=data_dir, mode='dev',
-                                    img_height=img_height, img_width=img_width)
+    # train_dataset = Synth90kDataset(root_dir=data_dir, mode='train',
+    #                                img_height=img_height, img_width=img_width)
+    # valid_dataset = Synth90kDataset(root_dir=data_dir, mode='dev',
+    #
+    # img_height=img_height, img_width=img_width)
+    image_size = (32, 100)
+    batch_size = 64
+
+    augmentation = transforms.Compose([
+        transforms.Resize(size=(image_size[0], image_size[1])),
+    ])
+
+    files, labels = np.loadtxt(
+        PATH + "ab_train_labels.txt", delimiter='\t', unpack=True, dtype=str)
+
+    train_files, test_files, train_labels, test_labels = train_test_split(
+        files, labels, test_size=0.1, random_state=49)
+
+    train_dataset = DataGenerator(path=PATH, sub_folder=SUB_FOLDER,
+                                  images_list=train_files, labels=train_labels, transform=augmentation)
+
+    test_dataset = DataGenerator(path=PATH, sub_folder=SUB_FOLDER,
+                                  images_list=test_files, labels=test_labels, transform=augmentation)
 
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=train_batch_size,
         shuffle=True,
         num_workers=cpu_workers,
-        collate_fn=synth90k_collate_fn)
+        collate_fn=collate_fn)
     valid_loader = DataLoader(
-        dataset=valid_dataset,
+        dataset=test_dataset,
         batch_size=eval_batch_size,
-        shuffle=True,
-        num_workers=cpu_workers,
-        collate_fn=synth90k_collate_fn)
+        shuffle=False,
+        # num_workers=cpu_workers,
+        collate_fn=collate_fn)
 
-    num_class = len(Synth90kDataset.LABEL2CHAR) + 1
-    crnn = CRNN(1, img_height, img_width, num_class,
+    num_class = len(DataGenerator.LABEL2CHAR) + 1
+    crnn_num_classes = 37 #
+    crnn = CRNN(1, img_height, img_width, 37,
                 map_to_seq_hidden=config['map_to_seq_hidden'],
                 rnn_hidden=config['rnn_hidden'],
                 leaky_relu=config['leaky_relu'])
     if reload_checkpoint:
-        crnn.load_state_dict(torch.load(reload_checkpoint, map_location=device))
+        crnn.load_state_dict(torch.load(
+            reload_checkpoint, map_location=device))
+
+        for parameter in crnn.parameters():
+            parameter.requires_grad = False
+
+    crnn.dense = torch.nn.Linear(2*256, num_class)
     crnn.to(device)
 
     optimizer = optim.RMSprop(crnn.parameters(), lr=lr)
@@ -96,24 +137,24 @@ def main():
             tot_train_count += train_size
             if i % show_interval == 0:
                 print('train_batch_loss[', i, ']: ', loss / train_size)
-
-            if i % valid_interval == 0:
-                evaluation = evaluate(crnn, valid_loader, criterion,
-                                      decode_method=config['decode_method'],
-                                      beam_size=config['beam_size'])
-                print('valid_evaluation: loss={loss}, acc={acc}'.format(**evaluation))
-
-                if i % save_interval == 0:
-                    prefix = 'crnn'
-                    loss = evaluation['loss']
-                    save_model_path = os.path.join(config['checkpoints_dir'],
-                                                   f'{prefix}_{i:06}_loss{loss}.pt')
-                    torch.save(crnn.state_dict(), save_model_path)
-                    print('save model at ', save_model_path)
-
             i += 1
-
+            
         print('train_loss: ', tot_train_loss / tot_train_count)
+
+        if epoch % valid_interval == 0:
+            evaluation = evaluate(crnn, valid_loader, criterion,
+                                  decode_method=config['decode_method'],
+                                  beam_size=config['beam_size'])
+            print('valid_evaluation: loss={loss}, acc={acc}'.format(
+                **evaluation))
+
+        if epoch % save_interval == 0:
+            prefix = 'crnn'
+            loss = evaluation['loss']
+            save_model_path = os.path.join(config['checkpoints_dir'],
+                                           f'{prefix}_{i:06}_loss{loss}.pt')
+            torch.save(crnn.state_dict(), save_model_path)
+            print('save model at ', save_model_path)
 
 
 if __name__ == '__main__':
