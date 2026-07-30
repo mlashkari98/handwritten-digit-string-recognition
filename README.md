@@ -19,6 +19,9 @@ We used the ORAND-CAR-2014 dataset containing images of hand written digits sequ
 
 <img width="186" height="66" alt="b_car_012484" src="https://github.com/user-attachments/assets/c3a59556-0a20-41a4-8b21-e90962583d48" />
 
+<img width="150" height="56" alt="b_car_011748" src="https://github.com/user-attachments/assets/c91d8fe6-f399-4f25-aa63-2c232d95194d" />
+
+
 
 ## Evaluatation
 
