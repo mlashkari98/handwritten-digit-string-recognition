@@ -1,4 +1,4 @@
-# Hand Written Digit string Recognition
+# Hand Written Digit String Recognition
 
 
 ## Architecture
