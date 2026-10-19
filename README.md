@@ -1,5 +1,7 @@
-# Hand Written Digit String Recognition
+# Hand-written Digit String Recognition
 
+## Motivation
+Hand-written digit string recognition (HDSR) is a computer vision task that involves identifying and recognizing a sequence of digits written by hand in an image. Unlike single-digit recognition, which classifies an image containing one digit, HDSR requires detecting and correctly recognizing multiple consecutive digits, often written without clear separation between them. It is commonly used in applications such as reading handwritten postal codes, bank cheque amounts, identification numbers, and forms.
 
 ## Architecture
 
@@ -23,7 +25,7 @@ We used the ORAND-CAR-2014 dataset containing images of hand written digits sequ
 
 
 
-## Evaluatation
+## Evaluation
 
 We chose `prefix_beam_search (beam_size=10)` as our decoding method.
 
