@@ -37,9 +37,7 @@ We chose `prefix_beam_search (beam_size=10)` as our decoding method.
 
 ## Train your model
 
-You could adjust hyper-parameters in `./src/config.py`.
-
-And train crnn models,
+You could adjust hyper-parameters in `./src/config.py`. Then run:
 
 ```command
 $ python src/train.py
