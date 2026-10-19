@@ -46,3 +46,5 @@ $ python src/train.py
 ## Acknowledgement
 
 This repo is a fork of [crnn-pytorch](https://github.com/GitYCC/crnn-pytorch).
+
+[sharkdev.ai](https://sharkdev.ai/)
